@@ -6,12 +6,15 @@ function Client(server, conn, skeletonConstructor) {
     this.skeleton = new skeletonConstructor(this);
     this.messageCount = 0;
     this.stub = null;
-    this.callbacks = {}
+    this.callbacks = {};
+    this.requestId = null;
+    this.debug = false;
 }
 
 exports.Client = Client;
 
 Client.prototype.handle = function(message) {
+    if(this.debug) console.log("* RECV " + message);
     try {
         var request = JSON.parse(message);
     } catch(error) {
@@ -31,6 +34,7 @@ Client.prototype.handle = function(message) {
 }
 
 Client.prototype.send = function(obj) {
+    if(this.debug) console.log("* SEND " + JSON.stringify(obj));
     this.conn.send(JSON.stringify(obj));
     ++this.messageCount;
 }
@@ -79,7 +83,9 @@ Client.prototype.handleMethodCallRequest = function(request) {
     var methodParams = request.params;
     
     if(typeof(this.skeleton[methodName]) == "function") {
+        this.requestId = request.id;
         var response = this.skeleton[methodName](methodParams);
+        this.requestId = null;
         if(response !== undefined) {
             this.sendResponse(request.id, response);
         }

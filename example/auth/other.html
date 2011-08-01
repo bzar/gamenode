@@ -1,0 +1,42 @@
+<html>
+<head>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="/socket.io/socket.io.js"></script> 
+<script type="text/javascript" src="gamenode/gameNodeClient.js"></script>
+<script type="text/javascript" src="gamenode/session.js"></script>
+<script type="text/javascript" src="clientSettings.js"></script>
+<script type="text/javascript">
+
+var client = new GameNodeClient();
+var session = null;
+
+$(document).ready(function() {
+    session = resumeSessionOrRedirect(client, undefined, settings.authFailureRedirect, initPage);
+});
+
+function initPage(session) {
+
+}
+
+</script>
+</head>
+<body>
+
+<div id="header">
+<h1>Other view</h1>
+<a href="main.html">Main page</a> |
+<a href="#" onClick="session.close(); return false;">Logout</a>
+<hr />
+</div>
+
+<div id="content">
+<p>This is a second page</p>
+</div>
+
+<div id="footer">
+<hr />
+<p>Footer!</p>
+</div>
+
+</body>
+</html>

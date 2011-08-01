@@ -1,0 +1,105 @@
+<html>
+<head>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="/socket.io/socket.io.js"></script> 
+<script type="text/javascript" src="gamenode/gameNodeClient.js"></script>
+<script type="text/javascript" src="gamenode/session.js"></script>
+<script type="text/javascript" src="clientSettings.js"></script>
+<script type="text/javascript">
+
+function Skeleton(client) {
+    this.client = client;
+    
+    this.newGame = function(gameName) {
+        addGame(gameName, []);
+    }
+    
+    this.addPlayer = function(params) {
+        var playersElement = $("#games [game=" + params.game + "] .players");
+        if(playersElement.text() != "") {
+            playersElement.text([playersElement.text(), params.user].join(", "));
+        } else {
+            playersElement.text(params.user);
+        }
+    }
+}
+
+var client = new GameNodeClient(Skeleton);
+var session = null;
+
+$(document).ready(function() {
+    session = resumeSessionOrRedirect(client, undefined, settings.authFailureRedirect, initPage);
+});
+
+function initPage(session) {
+    client.stub.subscribeGameList(null, function(gameList) {
+        var gameTableElement = $("#games tbody");
+        gameTableElement.empty();
+        
+        for(var i = 0; i < gameList.length; ++i) {
+            var gameInfo = gameList[i];
+            addGame(gameInfo.name, gameInfo.players);
+        }
+    });
+    
+    $("#newgame").submit(function(e) {
+        e.preventDefault();
+        var newGameName = $("#newgamename").val();
+        client.stub.newGame(newGameName, function(response) {
+            if(response.success) {
+                location.replace("game.html#" + newGameName);
+            } else {
+                alert(response.reason);
+            }
+        });
+    });
+}
+
+function addGame(gameName, players) {
+    var gameTableElement = $("#games tbody");
+    
+    var gameElement = $("<tr></tr>");
+    var gameNameElement = $("<td></td>");
+    var gamePlayersElement = $("<td></td>");
+    var gameLinkElement = $("<a></a>");
+
+    gameElement.attr("game", gameName);
+    gameLinkElement.attr("href", "game.html#" + gameName);
+    gameLinkElement.addClass("name");
+    gameLinkElement.text(gameName);
+    gamePlayersElement.text(players.join(", "));
+    gamePlayersElement.addClass("players");
+
+    gameNameElement.append(gameLinkElement);
+    gameElement.append(gameNameElement);
+    gameElement.append(gamePlayersElement);
+    gameTableElement.append(gameElement);
+}
+
+</script>
+</head>
+<body>
+
+<div id="header">
+<h1>Game list</h1>
+<a href="#" onClick="session.close(); return false;">Logout</a>
+<hr />
+</div>
+
+<div id="content">
+<form id="newgame">
+    <ul>
+        <li><label for="gamename">Game name</label><input type="text" id="newgamename" value="" /></li>
+        <li><input type="submit" value="Create game" /></li>
+    </ul>
+</form>
+<table id="games">
+<thead><tr><th>Game</th><th>Players</th></tr></thead>
+<tbody>
+
+</tbody>
+</table>
+</div>
+
+</body>
+</html>

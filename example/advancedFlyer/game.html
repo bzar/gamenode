@@ -1,0 +1,257 @@
+<html>
+<head>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="/socket.io/socket.io.js"></script> 
+<script type="text/javascript" src="gamenode/gameNodeClient.js"></script>
+<script type="text/javascript" src="clientSettings.js"></script>
+<script type="text/javascript" src="starField.js"></script>
+<script type="text/javascript" src="vec2d.js"></script>
+<script type="text/javascript" src="player.js"></script>
+<script type="text/javascript" src="flyerGame.js"></script>
+<script type="text/javascript" src="fpsCounter.js"></script>
+<script type="text/javascript">
+
+function Skeleton(client) {
+}
+
+var client = new GameNodeClient(Skeleton);
+var model = undefined;
+
+client.onMessage = function(message) {
+    if(message.type == "statusUpdate") {
+        statusUpdate(message.self, message.players);
+    }
+}
+
+client.onConnected = function() {
+    initGame();
+}
+
+var gameElement = undefined;
+var ctx = undefined;
+var canvasWidth = undefined;
+var canvasHeight = undefined;
+var starField = undefined;
+var game = undefined;
+var myPlayer = undefined;
+var playerColors = {};
+
+var fpsCounter = new FPSCounter(1000);
+
+$(document).ready(function() {
+    client.connect();
+    gameElement = $("#game");
+    ctx = gameElement.get(0).getContext("2d");
+    canvasWidth = parseInt(gameElement.attr("width"));
+    canvasHeight = parseInt(gameElement.attr("height"));    
+    ctx.font = "bold 15px sans-serif";
+});
+
+function initGame() {
+    game = new FlyerGame();
+    starField = new StarField(canvasWidth, canvasHeight, 50);
+    
+    $(document).keydown(function(e) {
+        var player = game.players[myPlayer];
+        if(e.keyCode == 37 && !player.rotatingLeft) {
+            client.stub.rotateLeft();
+            player.rotatingLeft = true;
+        } else if(e.keyCode == 38 && !player.accelerating) {
+            client.stub.accelerate();
+            player.accelerating = true;
+        } else if(e.keyCode == 39 && !player.rotatingRight) {
+            client.stub.rotateRight();
+            player.rotatingRight = true;
+        } else if(e.keyCode == 83) {
+            client.stub.shoot();
+        } else if(e.keyCode == 65 && !player.strafingLeft) {
+            client.stub.strafeLeft();
+            player.strafingLeft = true;
+        } else if(e.keyCode == 68 && !player.strafingRight) {
+            client.stub.strafeRight();
+            player.strafingRight = true;
+        } 
+    });
+
+    $(document).keyup(function(e) {
+        var player = game.players[myPlayer];
+        if(e.keyCode == 37) {
+            client.stub.stopRotateLeft();
+            player.rotatingLeft = false;
+        } else if(e.keyCode == 38) {
+            client.stub.stopAccelerate();
+            player.accelerating = false;
+        } else if(e.keyCode == 39) {
+            client.stub.stopRotateRight();
+            player.rotatingRight = false;
+        } else if(e.keyCode == 65) {
+            client.stub.stopStrafeLeft();
+            player.strafingLeft = false;
+        } else if(e.keyCode == 68) {
+            client.stub.stopStrafeRight();
+            player.strafingRight = false;
+        }
+    });
+
+    game.onUpdate = render;
+    game.start(parseInt($("#fpsSelect").val()));
+    
+    $("#fpsSelect").change(function() {
+        var newFps = parseInt($(this).val());
+        game.stop();
+        game.start(newFps);
+    });
+}
+
+function statusUpdate(self, players) {
+    myPlayer = self;
+    game.setData(players);
+}
+
+function render() {
+    if(game === undefined) {
+        return
+    }
+    
+    var currentFPS = fpsCounter.update();
+
+    var self = game.players[myPlayer];
+    if(!self || !self.position) {
+        return;
+    }
+
+    starField.update(self.position.x, self.position.y);
+        
+    var view = new Vec2D(-self.position.x + canvasWidth/2, -self.position.y + canvasHeight/2);
+    ctx.strokeStyle = "white";
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    
+    starField.drawStars(ctx, view);
+
+    for(var i = 0; i < game.players.length; ++i) {
+        var player = game.players[i];
+        ctx.strokeStyle = playerColor(player.objectId);
+        var screenPosition = player.position.add(view)
+        if(screenPosition.x < -20 ||
+           screenPosition.y < -20 ||
+           screenPosition.x > canvasWidth + 20 ||
+           screenPosition.y > canvasHeight + 20) {
+            drawShipMarker(screenPosition);
+        } else {
+            drawShip(screenPosition, player.angle);
+        }
+        
+        for(var j = 0; j < player.shots.length; ++j) {
+            var shot = player.shots[j]
+            drawShot(shot.position.add(view));
+        }
+    }
+    
+    ctx.fillStyle = "#fff";
+    ctx.fillText("FPS: " + parseInt(currentFPS).toString(), 0, 15);
+}
+
+function drawShip(position, angle) {
+    ctx.save();
+    ctx.translate(position.x, position.y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(15, 0);
+    ctx.lineTo(-10,10);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(-10, -10);
+    ctx.lineTo(15, 0);
+    ctx.stroke();
+    ctx.closePath();
+    ctx.restore();
+}
+
+function drawShipMarker(position, angle) {
+    var pos = position.subtract(new Vec2D(canvasWidth/2, canvasHeight/2));
+    ctx.save();
+    if(Math.abs(pos.x) * canvasHeight >= Math.abs(pos.y) * canvasWidth) {
+        if(pos.x > 0) {
+            pos.scalei((canvasWidth/2) / pos.x);
+            ctx.translate(pos.x + canvasWidth/2, pos.y + canvasHeight/2);
+            ctx.beginPath();
+            ctx.moveTo(-5, -5);
+            ctx.lineTo(0, 0);
+            ctx.lineTo(-5, 5);
+        } else {
+            pos.scalei((canvasWidth/2)/-pos.x );
+            ctx.translate(pos.x + canvasWidth/2, pos.y + canvasHeight/2);
+            ctx.beginPath();
+            ctx.moveTo(5, -5);
+            ctx.lineTo(0, 0);
+            ctx.lineTo(5, 5);
+        }
+    } else {
+        if(pos.y > 0) {
+            pos.scalei((canvasHeight/2) / pos.y);
+            ctx.translate(pos.x + canvasWidth/2, pos.y + canvasHeight/2);
+            ctx.beginPath();
+            ctx.moveTo(-5, -5);
+            ctx.lineTo(0, 0);
+            ctx.lineTo(5, -5);        
+        } else {
+            pos.scalei((canvasHeight/2) / -pos.y);
+            ctx.translate(pos.x + canvasWidth/2, pos.y + canvasHeight/2);
+            ctx.beginPath();
+            ctx.moveTo(-5, 5);
+            ctx.lineTo(0, 0);
+            ctx.lineTo(5, 5);
+        }
+    }
+    
+    ctx.stroke();
+    ctx.closePath();
+    ctx.restore();    
+}
+
+function drawShot(position) {
+    ctx.save();
+    ctx.translate(position.x, position.y);
+    ctx.beginPath();
+    ctx.arc(0, 0, 3, 0, 2*Math.PI);
+    ctx.stroke();
+    ctx.closePath();
+    ctx.restore();
+}
+
+function playerColor(playerNumber) {
+    if(playerNumber in playerColors) {
+        return playerColors[playerNumber];
+    }
+    
+    var r = (playerNumber * 17 + 128) % 128 + 128;
+    var g = (playerNumber * 37 + 64) % 128 + 128;
+    var b = (playerNumber * 7) % 128 + 128;
+    var color = "rgb(" + r + "," + g + "," + b + ")";
+    playerColors[playerNumber] = color;
+    return color;
+}
+
+</script>
+</head>
+<body>
+
+<div id="header">
+<h1>Flyer</h1>
+<hr />
+</div>
+<div>
+<form>
+    <select id="fpsSelect">
+        <option value="60" default>60 fps</option>
+        <option value="30" default>30 fps</option>
+        <option value="20" default>20 fps</option>
+    </select>
+</form>
+</div>
+<div id="content">
+<canvas id="game" width="640" height="480" style="border: 1px solid black;"></canvas>
+</div>
+
+</body>
+</html>

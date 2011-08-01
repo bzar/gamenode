@@ -1,0 +1,80 @@
+<html>
+<head>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="/socket.io/socket.io.js"></script> 
+<script type="text/javascript" src="gamenode/gameNodeClient.js"></script>
+<script type="text/javascript">
+
+function addMessage(msg) {
+    var listItem = $("<li></li>");
+    listItem.text(msg);
+    var messages = $("#messages");
+    messages.append(listItem);
+    messages.scrollTop($("#messages").attr("scrollHeight"));
+}
+
+function Skeleton(client) {
+    this.rmiTest = function(message) {
+        addMessage("RMI test: " + JSON.stringify(message));
+    }
+}
+
+$(document).ready(function() {
+    
+    var client = new GameNodeClient(Skeleton);
+    
+    client.onConnected = function() {
+        var methodSelect = $("#method");
+        methodSelect.empty();
+        for(propertyName in client.stub) {
+            var property = client.stub[propertyName];
+            if(typeof(property) == "function") {
+                var option = $("<option></option>");
+                option.text(propertyName);
+                option.attr("value", propertyName);
+                methodSelect.append(option);
+            }
+        }
+    }
+    
+    client.onMessage = function(msg) {
+        addMessage("[" + (new Date().getTime()) + "] Received message: " + JSON.stringify(msg));
+    }
+    
+    $("#callForm").submit(function(e) {
+        e.preventDefault();
+        var methodName = $("#method").val();
+        var params = $("#params").val();
+        addMessage("Calling \"" + methodName + "\" with parameters \"" + params + "\"");
+        client.stub[methodName](JSON.parse(params), function(response) {
+            addMessage("-> " + JSON.stringify(response));
+        });
+    });
+    
+    $("#messageForm").submit(function(e) {
+        e.preventDefault();
+        var message = $("#message").val();
+        addMessage("[" + (new Date().getTime()) + "] Sending message \"" + message + "\"");
+        client.sendMessage(message);
+    });
+
+    client.connect();
+});
+</script>
+</head>
+<body>
+<div id="client">
+    <ul id="messages" style="list-style:none; padding:0; height:300px; width:600px; overflow:auto;"></ul>
+    <form id="callForm">
+        <select id="method"><option>Connect first</option></select>
+        <input type="text" id="params" style="width: 550px;"/>
+        <input type="submit" id="call" value="call" style="width: 50px;"/>
+    </form>
+    <form id="messageForm">
+        <input type="text" id="message" style="width: 550px;"/>
+        <input type="submit" id="send" value="send" style="width: 50px;"/>
+    </form>
+</div>
+
+</body>
+</html>

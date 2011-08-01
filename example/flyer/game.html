@@ -1,0 +1,146 @@
+<html>
+<head>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="/socket.io/socket.io.js"></script> 
+<script type="text/javascript" src="gamenode/gameNodeClient.js"></script>
+<script type="text/javascript" src="clientSettings.js"></script>
+<script type="text/javascript" src="starField.js"></script>
+<script type="text/javascript">
+
+function Skeleton(client) {
+}
+
+var client = new GameNodeClient(Skeleton);
+var model = undefined;
+
+client.onMessage = function(message) {
+    if(message.type == "statusUpdate") {
+        model = message;
+    }
+}
+
+client.onConnected = function() {
+    initGame();
+}
+
+var gameElement = undefined;
+var ctx = undefined;
+var canvasWidth = undefined;
+var canvasHeight = undefined;
+var starField = undefined;
+
+$(document).ready(function() {
+    client.connect();
+    gameElement = $("#game");
+    ctx = gameElement.get(0).getContext("2d");
+    canvasWidth = parseInt(gameElement.attr("width"));
+    canvasHeight = parseInt(gameElement.attr("height"));    
+});
+
+function initGame() {
+    starField = new StarField(canvasWidth, canvasHeight, 50);
+    $(document).keydown(function(e) {
+        if(e.keyCode == 37) {
+            client.stub.rotateLeft();
+        } else if(e.keyCode == 38) {
+            client.stub.accelerate()
+        } else if(e.keyCode == 39) {
+            client.stub.rotateRight();
+        } else if(e.keyCode == 83) {
+            client.stub.shoot();
+        } else if(e.keyCode == 65) {
+            client.stub.strafeLeft();
+        } else if(e.keyCode == 68) {
+            client.stub.strafeRight();
+        } else {
+            console.log(e.keyCode);
+        }
+    });
+
+    $(document).keyup(function(e) {
+        if(e.keyCode == 37) {
+            client.stub.stopRotateLeft();
+        } else if(e.keyCode == 38) {
+            client.stub.stopAccelerate()
+        } else if(e.keyCode == 39) {
+            client.stub.stopRotateRight();
+        } else if(e.keyCode == 65) {
+            client.stub.stopStrafeLeft();
+        } else if(e.keyCode == 68) {
+            client.stub.stopStrafeRight();
+        }
+    });
+
+    setInterval(function() {
+        statusUpdate();
+    }, 1000/30);
+}
+
+function statusUpdate() {
+    if(model === undefined) {
+        return;
+    }
+    
+    var self = model.self;
+    var others = model.others;
+    
+    var view = {x: self.x - canvasWidth/2, y: self.y - canvasHeight/2};
+    starField.update(self.x, self.y);
+
+    ctx.strokeStyle = "white";
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    
+    starField.drawStars(ctx, view);
+
+    drawShip(self.x - view.x, self.y - view.y, self.angle);
+    for(var i = 0; i < others.length; ++i) {
+        var other = others[i];
+        drawShip(other.x - view.x, other.y - view.y, other.angle);
+        for(var j = 0; j < other.shots.length; ++j) {
+            var shot = other.shots[j]
+            drawShot(shot.x - view.x, shot.y - view.y);
+        }
+    }
+}
+
+function drawShip(x, y, angle) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(15, 0);
+    ctx.lineTo(-10,10);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(-10, -10);
+    ctx.lineTo(15, 0);
+    ctx.stroke();
+    ctx.closePath();
+    ctx.restore();
+}
+
+function drawShot(x, y) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.beginPath();
+    ctx.arc(0, 0, 3, 0, 2*Math.PI);
+    ctx.stroke();
+    ctx.closePath();
+    ctx.restore();
+}
+
+</script>
+</head>
+<body>
+
+<div id="header">
+<h1>Flyer</h1>
+<hr />
+</div>
+
+<div id="content">
+<canvas id="game" width="640" height="480" style="border: 1px solid black;"></canvas>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,91 @@
+<html>
+<head>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="/socket.io/socket.io.js"></script> 
+<script type="text/javascript" src="gamenode/gameNodeClient.js"></script>
+<script type="text/javascript" src="chatClient.js"></script>
+<script type="text/javascript">
+
+function addMessage(msg) {
+    var listItem = $("<li></li>");
+    listItem.text(msg);
+    var messages = $("#messages");
+    messages.append(listItem);
+    messages.scrollTop($("#messages").attr("scrollHeight"));
+}
+
+var client = new ChatClient();
+
+$(document).ready(function() {
+    client.onConnected = function() {
+        addMessage("Connected to server");
+    }
+    
+    client.onMessage = function(msg) {
+        if(msg.type == "say") {
+            addMessage("[" + msg.channel + "] " + msg.from + ": " + msg.message);
+        } else if(msg.type == "join") {
+            addMessage("[" + msg.channel + "] " + msg.nick + " joined");
+        } else if(msg.type == "part") {
+            addMessage("[" + msg.channel + "] " + msg.nick + " parted");
+        } else {
+            addMessage(JSON.stringify(msg));
+        }
+    }
+
+    client.connect();
+    
+    $("#messageForm").submit(function(e) {
+        e.preventDefault();
+        client.say($("#channel").val(), $("#message").val());
+        $("#message").val("");
+    });
+    
+    $("#joinForm").submit(function(e) {
+        e.preventDefault();
+        var channelName = $("#joinChannel").val();
+        $("#joinChannel").val("");
+        client.joinChannel(channelName, function(response) {
+            if(response == "ok") {
+                var channelSelect = $("#channel");
+                var option = $("<option></option>");
+                option.text(channelName);
+                option.attr("value", channelName);
+                channelSelect.append(option);
+            }
+        });
+    });
+    
+    $("#nickForm").submit(function(e) {
+        e.preventDefault();
+        var nick = $("#nick").val();
+        $("#nick").val("");
+        client.setNick(nick, function(response) {
+            if(response == "ok") {
+                addMessage("Changed nick to " + nick);
+            }
+        });
+    });
+});
+</script>
+</head>
+<body>
+<div id="client">
+    <ul id="messages" style="list-style:none; padding:0; height:300px; width:600px; overflow:auto;"></ul>
+    <form id="messageForm">
+        <select id="channel" style="width: 100px;"></select>
+        <input type="text" id="message" style="width: 450px;"/>
+        <input type="submit" id="send" value="send" style="width: 60px;"/>
+    </form>
+    <form id="joinForm">
+        <input type="text" id="joinChannel" style="width: 550px;"/>
+        <input type="submit" id="join" value="join" style="width: 60px;"/>
+    </form>
+    <form id="nickForm">
+        <input type="text" id="nick" style="width: 550px;"/>
+        <input type="submit" id="setNick" value="set nick" style="width: 60px;"/>
+    </form>
+</div>
+
+</body>
+</html>

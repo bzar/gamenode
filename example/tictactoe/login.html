@@ -1,0 +1,48 @@
+<html>
+<head>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="/socket.io/socket.io.js"></script> 
+<script type="text/javascript" src="gamenode/gameNodeClient.js"></script>
+<script type="text/javascript" src="gamenode/session.js"></script>
+<script type="text/javascript">
+
+var client = new GameNodeClient();
+var session = new Session(client);
+
+session.onAuthenticationSuccess = function() {
+    location.replace("gamelist.html");
+}
+
+client.onConnected = function() {
+    session.authenticate();
+}
+
+$(document).ready(function() {
+    $("#login").submit(function(e) {
+        e.preventDefault();
+        session.authenticate($("#username").val());
+    });
+    
+    client.connect();
+});
+
+</script>
+</head>
+<body>
+
+<div id="header">
+<h1>Login</h1>
+<hr />
+</div>
+
+<div id="content">
+<form id="login">
+    <ul>
+        <li><label for="username">Username</label><input type="text" id="username" value="user" /></li>
+        <li><input type="submit" value="Login" /></li>
+    </ul>
+</form>
+</div>
+
+</body>
+</html>

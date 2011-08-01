@@ -1,0 +1,193 @@
+<html>
+<head>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="/socket.io/socket.io.js"></script> 
+<script type="text/javascript" src="gamenode/gameNodeClient.js"></script>
+<script type="text/javascript" src="gamenode/session.js"></script>
+<script type="text/javascript" src="clientSettings.js"></script>
+<script type="text/javascript">
+
+function Skeleton(client) {
+    this.client = client;
+    
+    this.setMark = function(params) {
+        drawMark(params.player, params.x, params.y);
+    }
+    
+    this.winner = function(player) {
+        alert("Player " + player + " wins!");
+        showHideResetButton();
+    }
+    
+    this.joined = function(username) {
+        addPlayer(username);
+        showHideJoinButton()
+    }
+    
+    this.reset = function() {
+        ctx.clearRect(0,0,canvasWidth,canvasHeight);
+        drawGrid();
+        $("#resetButton").hide();
+    }
+}
+
+var client = new GameNodeClient(Skeleton);
+var session = null;
+
+var gameName = location.hash.substr(1);
+var gameElement = undefined;
+var ctx = undefined;
+var canvasWidth = undefined;
+var canvasHeight = undefined;
+var gridWidth = undefined;
+var gridHeight = undefined;
+var cellWidth = undefined;
+var cellHeight = undefined;
+
+$(document).ready(function() {
+    session = resumeSessionOrRedirect(client, undefined, settings.authFailureRedirect, initPage);
+    
+    $("#joinButton").hide();
+    $("#resetButton").hide();
+    
+    gameElement = $("#game");
+    ctx = gameElement.get(0).getContext("2d");
+    canvasWidth = parseInt(gameElement.attr("width"));
+    canvasHeight = parseInt(gameElement.attr("height"));    
+});
+
+function initPage(session) {
+    this.client.stub.subscribeGame(gameName, function(response) {
+        if(response.success) {
+            gridWidth = response.grid[0].length;
+            gridHeight = response.grid.length;
+            cellWidth = canvasWidth / gridWidth;
+            cellHeight = canvasHeight / gridHeight;
+
+            for(var i = 0; i < response.players.length; ++i) {
+                addPlayer(response.players[i]);
+            }
+            
+            drawGrid();
+            
+            for(var y = 0; y < gridHeight; ++y) {
+                for(var x = 0; x < gridWidth; ++x) {
+                    drawMark(response.grid[y][x], x, y);
+                }
+            }
+            
+            gameElement.mousedown(function(e) {
+                var x = parseInt(e.offsetX / cellWidth);
+                var y = parseInt(e.offsetY / cellHeight);
+                client.stub.play({game:gameName, x: x, y: y}, function(response) {
+                    if(!response.success) {
+                        alert(response.reason);
+                    }
+                });
+            });
+            
+            showHideJoinButton();
+            showHideResetButton();
+        } else {
+            alert(response.reason);
+        }
+    });
+}
+
+function drawGrid() {
+    ctx.save();
+    ctx.beginPath();
+    for(var i = 0; i <= gridHeight; ++i) {
+        ctx.moveTo(0, i * cellHeight);
+        ctx.lineTo(canvasWidth, i * cellHeight);
+    }
+
+    for(var i = 0; i <= gridWidth; ++i) {
+        ctx.moveTo(i * cellWidth, 0);
+        ctx.lineTo(i * cellWidth, canvasHeight);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawMark(player, x, y) {
+    ctx.save();
+    ctx.translate((x+0.5) * cellWidth, (y+0.5) * cellHeight);
+    if(player == 1) {
+        ctx.beginPath();
+        ctx.moveTo(-cellWidth / 2, -cellHeight / 2);
+        ctx.lineTo(cellWidth / 2, cellHeight / 2);
+        ctx.moveTo(-cellWidth / 2, cellHeight / 2);
+        ctx.lineTo(cellWidth / 2, -cellHeight / 2);
+        ctx.stroke();
+        ctx.closePath();
+    } else if(player == 2) {
+        ctx.beginPath();
+        ctx.arc(0,0,cellWidth/2,0,Math.PI*2,true);
+        ctx.stroke();
+        ctx.closePath();
+    }
+    
+    ctx.restore();
+}
+
+function addPlayer(username) {
+    var playersList = $("#players");
+    var playerItem = $("<li></li>");
+    playerItem.text(username);
+    playersList.append(playerItem);
+}
+
+function showHideJoinButton() {
+    client.stub.canJoinGame(gameName, function(response) {
+        if(response) {
+            $("#joinButton").show();
+            $("#joinButton").click(function() {
+                client.stub.joinGame(gameName);
+            });
+        } else {
+            $("#joinButton").hide();
+        }
+    });
+}
+
+function showHideResetButton() {
+    client.stub.canResetGame(gameName, function(response) {
+        if(response) {
+            $("#resetButton").show();
+            $("#resetButton").click(function() {
+                client.stub.resetGame(gameName);
+            });
+        } else {
+            $("#resetButton").hide();
+        }
+    });
+}
+
+</script>
+</head>
+<body>
+
+<div id="header">
+<h1>Game</h1>
+<a href="gamelist.html">Game list</a> | <a href="#" onClick="session.close(); return false;">Logout</a>
+<hr />
+</div>
+
+<div id="content">
+<div>
+    <input type="button" id="joinButton" value="Join" />
+    <input type="button" id="resetButton" value="Reset" />
+</div>
+<canvas id="game" width="300" height="300"></canvas>
+<div>
+    <span>Players</span>
+    <ul id="players">
+        
+    </ul>
+</div>
+</div>
+
+</body>
+</html>

@@ -10,8 +10,8 @@
 function Skeleton(client) {
     this.client = client;
     
-    this.setMark = function(params) {
-        drawMark(params.player, params.x, params.y);
+    this.setMark = function(player, x, y) {
+        drawMark(player, x, y);
     }
     
     this.winner = function(player) {
@@ -79,7 +79,8 @@ function initPage(session) {
             gameElement.mousedown(function(e) {
                 var x = parseInt(e.offsetX / cellWidth);
                 var y = parseInt(e.offsetY / cellHeight);
-                client.stub.play({game:gameName, x: x, y: y}, function(response) {
+                console.log(gameName);
+                client.stub.play(gameName, x, y, function(response) {
                     if(!response.success) {
                         alert(response.reason);
                     }

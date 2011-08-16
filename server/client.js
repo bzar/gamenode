@@ -84,7 +84,7 @@ Client.prototype.handleMethodCallRequest = function(request) {
     
     if(typeof(this.skeleton[methodName]) == "function") {
         this.requestId = request.id;
-        var response = this.skeleton[methodName](methodParams);
+        var response = this.skeleton[methodName].apply(this.skeleton, methodParams);
         this.requestId = null;
         if(response !== undefined) {
             this.sendResponse(request.id, response);
@@ -100,11 +100,22 @@ function GameNodeStub(client, methodList) {
     for(var i = 0; i < methodList.length; ++i) {
         var methodName = methodList[i];
         this[methodName] = function(methodName) {
-            return function(params, callback) {
+            return function() {
                 var id = new Date().getTime() + this.client.messageCount;
+                var args = [];
+                for(var i = 0; i < arguments.length; ++i) {
+                  args.push(arguments[i]);
+                }
+                
+                var callback = args[args.length-1];
+                if(typeof(callback) != "function") {
+                  callback = null;
+                }
+                
+                var params = args.slice(0, callback === null ? arguments.length : -1);
                 var msg = {type: "call", method: methodName, params: params, id: id};
 
-                if(callback !== undefined) {
+                if(callback !== null) {
                     this.client.callbacks[id] = callback;
                 }
 

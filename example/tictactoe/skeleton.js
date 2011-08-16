@@ -55,6 +55,7 @@ function Skeleton(client) {
             var username = this.session.user.username;
             
             this.server.gameListSubscriptions.forSubscribers(function(s) {
+                console.log(s);
                 s.stub.newGame(gameName);
                 s.stub.addPlayer({game:gameName, user:username});
             });
@@ -131,12 +132,12 @@ function Skeleton(client) {
     
     // Game
     
-    this.play = function(params) {
+    this.play = function(gameName, x, y) {
         if(this.session === undefined) {
             return {success: false, reason: "notLoggedIn"};
         }
         
-        var game = this.server.getGame(params.game)
+        var game = this.server.getGame(gameName)
 
         if(game === undefined) {
             return {success: false, reason: "noSuchGame"};
@@ -148,17 +149,14 @@ function Skeleton(client) {
         
         var player = game.turn;
         
-        if(game.play(params.x, params.y)) {
-            
+        if(game.play(x, y)) {
             var winner = game.checkWinner();
-            
             this.server.gameSubscriptions.forSubscribers(function(s) {
-                s.stub.setMark({player: player, x: params.x, y: params.y});
-            
+                s.stub.setMark(player, x, y);
                 if(winner !== null) {
                     s.stub.winner(winner);
                 }
-            }, params.game);
+            }, gameName);
             
             return {success: true};
         } else {

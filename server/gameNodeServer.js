@@ -13,12 +13,12 @@ function GameNodeServer(clientSkeletonConstructor) {
 
 exports.GameNodeServer = GameNodeServer;
 
-GameNodeServer.prototype.handleRequest = function(request, reqponse) {
+GameNodeServer.prototype.handleRequest = function(request, response) {
     res.writeHead(404, {"Content-Type": "text/html"});
     res.end('<h1>This is not a web server</h1>');
 }
 
-GameNodeServer.prototype.listen = function(port) {
+GameNodeServer.prototype.listen = function(port, hostname) {
     var this_ = this;
     
     this.server = http.createServer(function(req, res) {
@@ -49,7 +49,7 @@ GameNodeServer.prototype.listen = function(port) {
         this_.newConnection(conn);
     });
 
-    this.server.listen(port);
+    this.server.listen(port, hostname);
 }
 
 GameNodeServer.prototype.newConnection = function(conn) {

@@ -73,6 +73,6 @@ var fileServer = new FileServer(
 
 
 server.start();
-server.listen(8888, "0.0.0.0");
+server.listen(8888);
 fileServer.attachTo(server);
 

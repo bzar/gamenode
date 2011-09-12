@@ -28,6 +28,12 @@ Client.prototype.handle = function(message) {
         this.handleMethodCallRequest(request);
     } else if(request.type == "methodList") {
         this.handleMethodListRequest(request);
+    } else if(request.type == "response") {
+        var callback = this.callbacks[request.id];
+        if(callback !== undefined) {
+            callback(request.content);
+            delete this.callbacks[request.id];
+        }
     } else {
         this.sendError("Unknown message type " + request.type);
     }

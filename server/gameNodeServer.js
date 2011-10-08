@@ -9,6 +9,7 @@ function GameNodeServer(clientSkeletonConstructor) {
     this.clients = {};
     this.clientSkeletonConstructor = clientSkeletonConstructor;
     this.onMessage = function(msg) {}
+    this.crashOnException = false;
 }
 
 exports.GameNodeServer = GameNodeServer;

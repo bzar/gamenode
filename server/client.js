@@ -40,6 +40,9 @@ Client.prototype.handle = function(message) {
       }
     } catch(error) {
       this.sendError("Unhandled exception! " + error);
+      if(this.server.crashOnException) {
+        throw error;
+      }
     }
 }
 

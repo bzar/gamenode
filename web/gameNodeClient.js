@@ -38,16 +38,22 @@ function GameNodeClient(skeletonConstructor) {
         this.skeleton = new skeletonConstructor(this);
     }
     
-    this.ws = undefined;
-    this.stub = undefined;
+    this.ws = null;
+    this.stub = null;
 }
     
 GameNodeClient.prototype.connect = function(url) {
+    if(this.ws)
+      this.ws.disconnect();
+    
     this.ws = io.connect(url);
     
     var this_ = this;
     
     this.ws.on("connect", function() {
+        if(this_.stub !== null)
+          return;
+        
         var methods = [];
         for(propertyName in this_.skeleton) {
             var property = this_.skeleton[propertyName];

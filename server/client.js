@@ -39,10 +39,10 @@ Client.prototype.handle = function(message) {
           this.sendError("Unknown message type " + request.type);
       }
     } catch(error) {
-      this.sendError("Unhandled exception! " + error);
-      if(this.server.crashOnException) {
-        throw error;
-      }
+        this.sendError("Unhandled exception! " + error);
+        if(this.server.crashOnException) {
+          throw error;
+        }
     }
 }
 
@@ -77,11 +77,9 @@ Client.prototype.sendError = function(message) {
 Client.prototype.handleMethodListRequest = function(request) {
     var methods = [];
     for(propertyName in this.skeleton) {
-        if(this.skeleton.hasOwnProperty(propertyName)) {
-          var property = this.skeleton[propertyName];
-          if(typeof(property) == "function") {
-              methods.push(propertyName);
-          }
+        var property = this.skeleton[propertyName];
+        if(typeof(property) == "function") {
+            methods.push(propertyName);
         }
     }
     

@@ -22,20 +22,24 @@ Client.prototype.handle = function(message) {
         return;
     }
     
-    if(request.type == "message") {
-        this.onMessage(request.content);
-    } else if(request.type == "call") {
-        this.handleMethodCallRequest(request);
-    } else if(request.type == "methodList") {
-        this.handleMethodListRequest(request);
-    } else if(request.type == "response") {
-        var callback = this.callbacks[request.id];
-        if(callback !== undefined) {
-            callback(request.content);
-            delete this.callbacks[request.id];
-        }
-    } else {
-        this.sendError("Unknown message type " + request.type);
+    try {
+      if(request.type == "message") {
+          this.onMessage(request.content);
+      } else if(request.type == "call") {
+          this.handleMethodCallRequest(request);
+      } else if(request.type == "methodList") {
+          this.handleMethodListRequest(request);
+      } else if(request.type == "response") {
+          var callback = this.callbacks[request.id];
+          if(callback !== undefined) {
+              callback(request.content);
+              delete this.callbacks[request.id];
+          }
+      } else {
+          this.sendError("Unknown message type " + request.type);
+      }
+    } catch(error) {
+      this.sendError("Unhandled exception! " + error);
     }
 }
 
@@ -70,9 +74,11 @@ Client.prototype.sendError = function(message) {
 Client.prototype.handleMethodListRequest = function(request) {
     var methods = [];
     for(propertyName in this.skeleton) {
-        var property = this.skeleton[propertyName];
-        if(typeof(property) == "function") {
-            methods.push(propertyName);
+        if(this.skeleton.hasOwnProperty(propertyName)) {
+          var property = this.skeleton[propertyName];
+          if(typeof(property) == "function") {
+              methods.push(propertyName);
+          }
         }
     }
     
@@ -88,7 +94,9 @@ Client.prototype.handleMethodCallRequest = function(request) {
     var methodName = request.method;
     var methodParams = request.params;
     
-    if(typeof(this.skeleton[methodName]) == "function") {
+    if(!(methodParams instanceof Array)) {
+      this.sendError("Method parameter list must be an array");
+    } else if(typeof(this.skeleton[methodName]) == "function") {
         this.requestId = request.id;
         var response = this.skeleton[methodName].apply(this.skeleton, methodParams);
         this.requestId = null;

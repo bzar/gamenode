@@ -1,5 +1,9 @@
 function Session(client) {
-    this.sessionId = sessionStorage.getItem("sessionId");
+    this.sessionId = localStorage.getItem("sessionId");
+    if(!this.sessionId) {
+      this.sessionId = sessionStorage.getItem("sessionId");
+    }
+    
     this.client = client;
     this.onAuthenticationFailure = function() {};
     this.onAuthenticationSuccess = function() {};
@@ -9,7 +13,7 @@ function Session(client) {
     this.authenticated = false;
 }
 
-Session.prototype.authenticate = function(username, password) {
+Session.prototype.authenticate = function(username, password, remember) {
     var this_ = this;
     if(username !== undefined) {
         this.client.stub.newSession({
@@ -18,7 +22,12 @@ Session.prototype.authenticate = function(username, password) {
         }, function(response) {
             if(response.success) {
                 this_.sessionId = response.sessionId;
-                sessionStorage.setItem("sessionId", response.sessionId);
+                if(remember) {
+                  localStorage.setItem("sessionId", response.sessionId);
+                } else {
+                  sessionStorage.setItem("sessionId", response.sessionId);
+                }
+                
                 this_.authenticated = true;
                 this_.onAuthenticationSuccess();
             } else {
@@ -44,7 +53,8 @@ Session.prototype.authenticate = function(username, password) {
 
 Session.prototype.close = function() {
     sessionStorage.removeItem("sessionId");
-
+    localStorage.removeItem("sessionId");
+    
     if(!this.authenticated) {
         this.onCloseSuccess();
         return;

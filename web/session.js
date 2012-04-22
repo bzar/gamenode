@@ -21,6 +21,8 @@ Session.prototype.authenticate = function(username, password, remember) {
             password: password
         }, function(response) {
             if(response.success) {
+                sessionStorage.removeItem("sessionId");
+                localStorage.removeItem("sessionId");
                 this_.sessionId = response.sessionId;
                 if(remember) {
                   localStorage.setItem("sessionId", response.sessionId);

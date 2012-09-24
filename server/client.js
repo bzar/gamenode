@@ -74,6 +74,21 @@ Client.prototype.sendError = function(message) {
     });
 }
 
+Client.prototype.sendMethodListRequest = function(request) {
+    var methods = [];
+    for(propertyName in this.skeleton) {
+        var property = this.skeleton[propertyName];
+        if(typeof(property) == "function") {
+            methods.push(propertyName);
+        }
+    }
+
+    this.send({
+      type: "methodList",
+      methodList: request.methodList
+    });
+}
+
 Client.prototype.handleMethodListRequest = function(request) {
     var methods = [];
     for(propertyName in this.skeleton) {

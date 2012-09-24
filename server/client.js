@@ -3,6 +3,7 @@ function Client(server, conn, skeletonConstructor) {
     this.conn = conn;
     this.onDisconnect = function() { };
     this.onMessage = function(msg) { };
+    this.onMethodListReceived = function(client) { };
     this.skeleton = new skeletonConstructor(this);
     this.messageCount = 0;
     this.stub = null;
@@ -90,20 +91,26 @@ Client.prototype.sendMethodListRequest = function(request) {
 }
 
 Client.prototype.handleMethodListRequest = function(request) {
-    var methods = [];
-    for(propertyName in this.skeleton) {
-        var property = this.skeleton[propertyName];
-        if(typeof(property) == "function") {
-            methods.push(propertyName);
-        }
+    if(request.methodList !== undefined) {
+      var methods = [];
+      for(propertyName in this.skeleton) {
+          var property = this.skeleton[propertyName];
+          if(typeof(property) == "function") {
+              methods.push(propertyName);
+          }
+      }
+
+      this.send({
+          type: "methodList",
+          content: methods
+      });
+
+      this.stub = new GameNodeStub(this, request.methodList);
+    } else {
+      this.stub = new GameNodeStub(this, request.content);
     }
 
-    this.send({
-        type: "methodList",
-        content: methods
-    });
-
-    this.stub = new GameNodeStub(this, request.methodList);
+    this.onMethodListReceived(this);
 }
 
 Client.prototype.handleMethodCallRequest = function(request) {

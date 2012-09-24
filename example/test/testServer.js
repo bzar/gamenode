@@ -1,8 +1,8 @@
-var Server = require("../../server/gameNodeServer").GameNodeServer,
-    FileServer = require("../../server/fileServer").FileServer;
+var Server = require("gamenode").Server,
+    FileServer = require("gamenode").FileServer;
 
 function Skeleton(client) {
-    
+
     client.onMessage = function(msg) {
         this.sendMessage(msg);
     }
@@ -10,7 +10,7 @@ function Skeleton(client) {
     this.echo = function(params) {
         return params;
     }
-    
+
     this.calc = function(params) {
         var matches = /[0-9 \+\-\/\*]+/.exec(params);
         if(matches !== null && matches.length == 1 && matches[0] == params) {
@@ -19,7 +19,7 @@ function Skeleton(client) {
             return null;
         }
     }
-    
+
     this.rmiTest = function(message) {
         client.stub.rmiTest(message);
     }
@@ -27,7 +27,7 @@ function Skeleton(client) {
 
 var server = new Server(Skeleton);
 var fileServer = new FileServer(["testClient.html"], {gamenode: "../../web"}, __dirname, "testClient.html");
-    
+
 server.listen(8888);
 fileServer.attachTo(server);
 

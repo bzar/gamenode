@@ -21,7 +21,7 @@ Client.prototype.handle = function(message) {
         this.sendError("Invalid JSON message: " + message);
         return;
     }
-    
+
     try {
       if(request.type == "message") {
           this.onMessage(request.content);
@@ -82,19 +82,19 @@ Client.prototype.handleMethodListRequest = function(request) {
             methods.push(propertyName);
         }
     }
-    
+
     this.send({
         type: "methodList",
         content: methods
     });
-    
+
     this.stub = new GameNodeStub(this, request.methodList);
 }
 
 Client.prototype.handleMethodCallRequest = function(request) {
     var methodName = request.method;
     var methodParams = request.params;
-    
+
     if(!(methodParams instanceof Array)) {
       this.sendError("Method parameter list must be an array");
     } else if(typeof(this.skeleton[methodName]) == "function") {
@@ -121,12 +121,12 @@ function GameNodeStub(client, methodList) {
                 for(var i = 0; i < arguments.length; ++i) {
                   args.push(arguments[i]);
                 }
-                
+
                 var callback = args[args.length-1];
                 if(typeof(callback) != "function") {
                   callback = null;
                 }
-                
+
                 var params = args.slice(0, callback === null ? arguments.length : -1);
                 var msg = {type: "call", method: methodName, params: params, id: id};
 

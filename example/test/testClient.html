@@ -1,7 +1,9 @@
+<doctype html>
+
 <html>
 <head>
 <script type="text/javascript" src="http://code.jquery.com/jquery-1.4.2.min.js"></script>
-<script type="text/javascript" src="/socket.io/socket.io.js"></script> 
+<script type="text/javascript" src="/socket.io/socket.io.js"></script>
 <script type="text/javascript" src="gamenode/gameNodeClient.js"></script>
 <script type="text/javascript">
 
@@ -20,9 +22,9 @@ function Skeleton(client) {
 }
 
 $(document).ready(function() {
-    
+
     var client = new GameNodeClient(Skeleton);
-    
+
     client.onConnected = function() {
         var methodSelect = $("#method");
         methodSelect.empty();
@@ -36,11 +38,11 @@ $(document).ready(function() {
             }
         }
     }
-    
+
     client.onMessage = function(msg) {
         addMessage("[" + (new Date().getTime()) + "] Received message: " + JSON.stringify(msg));
     }
-    
+
     $("#callForm").submit(function(e) {
         e.preventDefault();
         var methodName = $("#method").val();
@@ -50,7 +52,7 @@ $(document).ready(function() {
             addMessage("-> " + JSON.stringify(response));
         });
     });
-    
+
     $("#messageForm").submit(function(e) {
         e.preventDefault();
         var message = $("#message").val();

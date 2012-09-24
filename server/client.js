@@ -75,7 +75,7 @@ Client.prototype.sendError = function(message) {
     });
 }
 
-Client.prototype.sendMethodListRequest = function(request) {
+Client.prototype.sendMethodListRequest = function() {
     var methods = [];
     for(propertyName in this.skeleton) {
         var property = this.skeleton[propertyName];
@@ -86,7 +86,7 @@ Client.prototype.sendMethodListRequest = function(request) {
 
     this.send({
       type: "methodList",
-      methodList: request.methodList
+      methodList: methods
     });
 }
 

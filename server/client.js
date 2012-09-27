@@ -4,6 +4,7 @@ function Client(server, conn, skeletonConstructor) {
     this.onDisconnect = function() { };
     this.onMessage = function(msg) { };
     this.onMethodListReceived = function(client) { };
+    this.onError = function(client) { };
     this.skeleton = new skeletonConstructor(this);
     this.messageCount = 0;
     this.stub = null;
@@ -36,6 +37,8 @@ Client.prototype.handle = function(message) {
               callback(request.content);
               delete this.callbacks[request.id];
           }
+      } else if(request.type == "error") {
+        this.onError(request.message);
       } else {
           this.sendError("Unknown message type " + request.type);
       }

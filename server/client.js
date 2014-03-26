@@ -114,6 +114,7 @@ Client.prototype.handleMethodListRequest = function(request) {
     }
 
     this.onMethodListReceived(this);
+    this.server.initialized(this.conn.id);
 }
 
 Client.prototype.handleMethodCallRequest = function(request) {

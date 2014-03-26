@@ -6,6 +6,7 @@ var sys = require("sys"),
 function GameNodeServer(clientSkeletonConstructor) {
     this.server = undefined;
     this.io = undefined;
+    this.uninitializedClients = {};
     this.clients = {};
     this.clientSkeletonConstructor = clientSkeletonConstructor;
     this.onMessage = function(msg) {}
@@ -55,8 +56,8 @@ GameNodeServer.prototype.listen = function(port, hostname) {
 
 GameNodeServer.prototype.newConnection = function(conn) {
     var client = new Client(this, conn, this.clientSkeletonConstructor);
-    this.clients[conn.id] = client;
-    
+    this.uninitializedClients[conn.id] = client;
+
     conn.on("message", function(message){
         client.handle(message);
     });
@@ -72,4 +73,17 @@ GameNodeServer.prototype.removeConnection = function(conn) {
         this.clients[conn.id].onDisconnect();
         delete this.clients[conn.id];
     }
+    if(conn.id in this.uninitializedClients) {
+      this.uninitializedClients[conn.id].onDisconnect();
+      delete this.uninitializedClients[conn.id];
+    }
 }
+
+GameNodeServer.prototype.initialized = function(connId) {
+    if(connId in this.uninitializedClients) {
+      this.clients[connId] = this.uninitializedClients[connId];
+      delete this.uninitializedClients[connId];
+      this.clients[connId].initialized = true;
+    }
+}
+

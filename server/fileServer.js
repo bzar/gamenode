@@ -77,8 +77,8 @@ FileServer.prototype.handleRequest = function(request, response) {
             filePath = path.join(this.relativeRoot, filePath);
         }
 
-        path.exists(filePath, function(exists) {
-            if(exists) {
+        fs.access(filePath, function(err) {
+            if(!err) {
                 fs.readFile(filePath, "binary", function(err, file) {
                         if(err) {
                                 response.writeHead(500, {"Content-Type": "text/plain"});
